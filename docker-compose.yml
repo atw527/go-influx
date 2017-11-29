@@ -1,0 +1,25 @@
+version: "2.2"
+services:
+    influx:
+        image: "influxdb:latest"
+        ports:
+            - "8086:8086"
+        expose:
+            - "8086"
+        environment:
+            INFLUXDB_DB: "testing"
+            INFLUXDB_DATA_QUERY_LOG_ENABLED: "false"
+            INFLUXDB_HTTP_LOG_ENABLED: "false"
+            INFLUXDB_IFQL_LOG_ENABLED: "false"
+            INFLUXDB_CONTINUOUS_QUERIES_LOG_ENABLED: "false"
+    grafana:
+        image: "grafana/grafana"
+        ports:
+            - "4401:3000"
+        expose:
+            - "3000"
+        volumes:
+            - ./docker/etc/grafana.ini:/etc/grafana/grafana.ini
+            - ./docker/grafana.db:/var/lib/grafana/grafana.db
+        environment:
+            INFLUX_DB: "testing"
