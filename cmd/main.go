@@ -13,7 +13,7 @@ func main() {
 	os.Setenv("INFLUX_PORT", "8086")
 	os.Setenv("INFLUX_DB", "testing")
 
-	gi, err := goinflux.NewGoInflux()
+	gi, err := goinflux.NewGoInfluxEnv()
 	if err != nil {
 		fmt.Printf("Error init: %v\n", err.Error())
 		return
@@ -28,15 +28,15 @@ func main() {
 	fields["value"] = 1
 
 	// unleash a torrent of points
-	/*
-		for {
-			err := gi.AddPoint("test", tags, fields, time.Now().UnixNano())
-			if err != nil {
-				fmt.Printf("Error point: %v\n", err.Error())
-				return
-			}
+	//*
+	for {
+		err := gi.AddPoint("test", tags, fields, time.Now().UnixNano())
+		if err != nil {
+			fmt.Printf("Error point: %v\n", err.Error())
+			return
 		}
-	    // */
+	}
+	// */
 
 	// trickle them in to make the timeout activate
 	//*
@@ -46,6 +46,7 @@ func main() {
 			fmt.Printf("Error point: %v\n", err.Error())
 			return
 		}
+		time.Sleep(500 * time.Millisecond)
 	}
 	// */
 }
