@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	goinflux "github.com/atw527/go-influx/go-influx"
+	goinflux "github.com/atw527/goinflux/goinflux"
 )
 
 func main() {
