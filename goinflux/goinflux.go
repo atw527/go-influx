@@ -97,7 +97,6 @@ func (gi *goInflux) managePoints() {
 				}
 			}
 		case <-delayChan:
-			fmt.Printf("Time's up!  Writing %v points.\n", len(gi.bp.Points()))
 			delayChan = time.After(delaySec)
 			err := gi.writePoints()
 			if err != nil {
