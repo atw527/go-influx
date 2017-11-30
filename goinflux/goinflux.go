@@ -42,7 +42,7 @@ func NewGoInflux(host string, port string) (GoInflux, error) {
 		Precision: "us",
 	}
 
-	gi.points = make(chan *client.Point, 10000)
+	gi.points = make(chan *client.Point, 5000)
 	gi.bp, err = client.NewBatchPoints(gi.bpConfig)
 	if err != nil {
 		return &gi, err
@@ -88,7 +88,7 @@ func (gi *goInflux) managePoints() {
 		select {
 		case point := <-gi.points:
 			gi.bp.AddPoint(point)
-			if len(gi.bp.Points()) > 10000 {
+			if len(gi.bp.Points()) > 5000 {
 				delayChan = time.After(delaySec)
 				err := gi.writePoints()
 				if err != nil {
@@ -97,7 +97,7 @@ func (gi *goInflux) managePoints() {
 				}
 			}
 		case <-delayChan:
-			fmt.Printf("Time's up!  Writing %v points.\n", len(gi.bp.Points()))
+			//fmt.Printf("Time's up!  Writing %v points.\n", len(gi.bp.Points()))
 			delayChan = time.After(delaySec)
 			err := gi.writePoints()
 			if err != nil {
@@ -112,7 +112,7 @@ func (gi *goInflux) writePoints() error {
 	var err error
 
 	if len(gi.bp.Points()) > 0 {
-		//fmt.Printf("Writing %v points.\n", len(gi.bp.Points()))
+		fmt.Printf("Writing %v points.\n", len(gi.bp.Points()))
 
 		err = gi.influx.Write(gi.bp)
 		if err != nil {
