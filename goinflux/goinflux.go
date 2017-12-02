@@ -19,6 +19,7 @@ type goInflux struct {
 	init bool
 
 	points chan *client.Point
+	sthap  chan int
 
 	influx   client.Client
 	bpConfig client.BatchPointsConfig
@@ -28,6 +29,7 @@ type goInflux struct {
 // GoInflux interface to unexported type
 type GoInflux interface {
 	AddPoint(string, TagGroup, FieldGroup, int64) error
+	Sthap()
 }
 
 // NewGoInflux basically a constructor
@@ -43,6 +45,8 @@ func NewGoInflux(host string, port string) (GoInflux, error) {
 	}
 
 	gi.points = make(chan *client.Point, 5000)
+	gi.sthap = make(chan int)
+
 	gi.bp, err = client.NewBatchPoints(gi.bpConfig)
 	if err != nil {
 		return &gi, err
@@ -80,15 +84,26 @@ func (gi *goInflux) AddPoint(measurement string, tags TagGroup, fields FieldGrou
 	return nil
 }
 
+func (gi *goInflux) Sthap() {
+	gi.sthap <- 1
+}
+
 func (gi *goInflux) managePoints() {
 	delaySec := 10 * time.Second
 	delayChan := time.After(delaySec)
 
 	for {
 		select {
+		case <-gi.sthap:
+			err := gi.writePoints()
+			if err != nil {
+				fmt.Printf("Error in writing points: %v", err.Error())
+				return
+			}
+			break
 		case point := <-gi.points:
 			gi.bp.AddPoint(point)
-			if len(gi.bp.Points()) > 5000 {
+			if len(gi.bp.Points()) > 4999 {
 				delayChan = time.After(delaySec)
 				err := gi.writePoints()
 				if err != nil {
@@ -113,6 +128,11 @@ func (gi *goInflux) writePoints() error {
 
 	if len(gi.bp.Points()) > 0 {
 		fmt.Printf("Writing %v points.\n", len(gi.bp.Points()))
+
+		_, _, err = gi.influx.Ping(1 * time.Second)
+		if err != nil {
+			return err
+		}
 
 		err = gi.influx.Write(gi.bp)
 		if err != nil {
