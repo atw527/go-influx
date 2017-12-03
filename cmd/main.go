@@ -18,6 +18,7 @@ func main() {
 		fmt.Printf("Error init: %v\n", err.Error())
 		return
 	}
+	defer gi.Stahp()
 
 	fmt.Printf("INIT\n")
 

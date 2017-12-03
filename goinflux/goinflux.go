@@ -18,8 +18,9 @@ type FieldGroup map[string]interface{}
 type goInflux struct {
 	init bool
 
-	points chan *client.Point
-	sthap  chan int
+	points   chan *client.Point
+	sthap    chan int
+	sthapped chan int
 
 	influx   client.Client
 	bpConfig client.BatchPointsConfig
@@ -29,7 +30,7 @@ type goInflux struct {
 // GoInflux interface to unexported type
 type GoInflux interface {
 	AddPoint(string, TagGroup, FieldGroup, int64) error
-	Sthap()
+	Stahp()
 }
 
 // NewGoInflux basically a constructor
@@ -46,6 +47,7 @@ func NewGoInflux(host string, port string) (GoInflux, error) {
 
 	gi.points = make(chan *client.Point, 5000)
 	gi.sthap = make(chan int)
+	gi.sthapped = make(chan int)
 
 	gi.bp, err = client.NewBatchPoints(gi.bpConfig)
 	if err != nil {
@@ -84,8 +86,11 @@ func (gi *goInflux) AddPoint(measurement string, tags TagGroup, fields FieldGrou
 	return nil
 }
 
-func (gi *goInflux) Sthap() {
+func (gi *goInflux) Stahp() {
 	gi.sthap <- 1
+
+	// give it a second!
+	<-gi.sthapped
 }
 
 func (gi *goInflux) managePoints() {
@@ -100,6 +105,7 @@ func (gi *goInflux) managePoints() {
 				fmt.Printf("Error in writing points: %v", err.Error())
 				return
 			}
+			gi.sthapped <- 1
 			break
 		case point := <-gi.points:
 			gi.bp.AddPoint(point)
