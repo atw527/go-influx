@@ -20,21 +20,31 @@ for {
 }
 ```
 
-# Testing
+# Tests on Tests
 
-Running `reset.sh` will take down Influx if running and restart with a clean
+This whole project is a giant test, but there are integration tests to make
+sure the environment is sane.
+
+```bash
+#[user]$
+./scripts/reset.sh
+```
+
+# Running Benchmark
+
+Running `benchmark.sh` will take down Influx if running and restart with a clean
 graph and run through the benchmarks.
 
 ```bash
 #[user]$
-./reset.sh
+./scripts/benchmark.sh
 ```
 
 Watch the test results: http://localhost:4401/dashboard/db/playground?refresh=5s&orgId=1
 
 Both single-stat modules should go green with the expected number of points when the test completes.
 
-When done testing, run:
+When done, run:
 
 ```bash
 #[user]$
@@ -43,6 +53,15 @@ docker-compose down
 
 # Known Issues
 
-Currently it's not shutting down correctly.  In the output, the last point batch will be less than what's sent to the channel.
+The best way I know of to stopping the flow of points is to
+shove a nil pointer into the `points` channel.  I tried using a separate stop
+channel, but select statements don't give priority to one case over another.  
+The goal was to drain the `points` channel first, then wait on three conditions:
 
-Putting in a manual delay between the last `AddPoint()` and `Stahp()` will fix the problem.  However, I want the channels to block each other while things finish.
+- points - write to `client.BatchPoints`
+- sthap signal - flush `client.BatchPoints` to Influx and break
+- timeout - flush `client.BatchPoints` to Influx and continue
+
+But Go's select structure will select a case at random if more than one is
+ready.  So when the `sthap` channel had a value, it would close with items still
+in the `points` channel.
