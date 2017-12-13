@@ -27,7 +27,7 @@ sure the environment is sane.
 
 ```bash
 #[user]$
-./scripts/reset.sh
+./scripts/test.sh
 ```
 
 # Running Benchmark
