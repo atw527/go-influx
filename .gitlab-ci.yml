@@ -40,7 +40,7 @@ integration:
         paths:
             - coverage
     before_script:
-        - docker-compose up influx
+        - docker-compose up -d influx
     script:
         - ./scripts/integration-tests.sh
     after_script:
