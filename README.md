@@ -1,3 +1,6 @@
+[![pipeline status](https://git.mancave.wellsie.net/lib/goinflux/badges/master/pipeline.svg)](https://git.mancave.wellsie.net/lib/goinflux/pipelines)
+[![coverage report](https://git.mancave.wellsie.net/lib/goinflux/badges/master/coverage.svg)](https://git.mancave.wellsie.net/lib/goinflux/commits/master)
+
 Write points to Influx in bulk when needed and also trickle in the points when the flow slows down.
 
 # The General Idea

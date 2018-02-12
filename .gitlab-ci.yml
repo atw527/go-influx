@@ -1,0 +1,62 @@
+stages:
+    - test
+    - binary
+    - deploy
+
+.dir_setup: &dir_setup
+    before_script:
+        - mkdir -p "$GOPATH/src/git.mancave.wellsie.net/$CI_PROJECT_NAMESPACE"
+        - ln -s "$PWD" "$GOPATH/src/git.mancave.wellsie.net/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+        - cd "$GOPATH/src/git.mancave.wellsie.net/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+    after_script:
+        - rm -v "$GOPATH/src/git.mancave.wellsie.net/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+
+gofmt:
+    <<: *dir_setup
+    stage: test
+    tags: [docker]
+    image: golang:1.9
+    script:
+        - gofmt -d -s cmd 2>&1
+        - gofmt -d -s goinflux 2>&1
+
+lint:
+    <<: *dir_setup
+    stage: test
+    tags: [docker]
+    image: golang:1.9
+    script:
+        - go get -u github.com/golang/lint/golint
+        - golint -set_exit_status $(go list ./... | grep -v /vendor/)
+
+integration:
+    <<: *dir_setup
+    stage: test
+    tags: [shell]
+    coverage: '/total:\s+\(statements\)\s+(\d+.\d+\%)/'
+    artifacts:
+        name: coverage
+        expire_in: 1 day
+        paths:
+            - coverage
+    before_script:
+        - docker-compose up influx
+    script:
+        - ./scripts/integration-tests.sh
+    after_script:
+        - docker-compose down
+
+binary:
+    <<: *dir_setup
+    stage: binary
+    tags: [docker]
+    image: golang:1.9
+    artifacts:
+        name: bin/linux-amd64
+        expire_in: 1 day
+        paths:
+            - bin/linux-amd64
+    script:
+        - rm -rf bin
+        - mkdir -p bin/linux-amd64
+        - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ./bin/linux-amd64/goinflux ./goinflux/
