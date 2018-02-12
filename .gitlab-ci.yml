@@ -39,11 +39,9 @@ integration:
         expire_in: 1 day
         paths:
             - coverage
-    before_script:
-        - docker-compose up -d influx
     script:
+        - docker-compose up -d influx
         - ./scripts/integration-tests.sh
-    after_script:
         - docker-compose down
 
 binary:
