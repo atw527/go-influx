@@ -1,7 +1,7 @@
 stages:
+    - submodule
     - test
     - binary
-    - deploy
 
 .dir_setup: &dir_setup
     before_script:
@@ -11,9 +11,26 @@ stages:
     after_script:
         - rm -v "$GOPATH/src/git.mancave.wellsie.net/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
 
+submodule:
+    <<: *dir_setup
+    stage: submodule
+    tags: [docker]
+    image: golang:1.9
+    artifacts:
+        name: vendor
+        expire_in: 1 day
+        paths:
+            - vendor
+    script:
+        - rm -rf vendor
+        - git submodule sync
+        - git submodule update --init
+
 gofmt:
     <<: *dir_setup
     stage: test
+    dependencies:
+        - submodule
     tags: [docker]
     image: golang:1.9
     script:
@@ -23,6 +40,8 @@ gofmt:
 lint:
     <<: *dir_setup
     stage: test
+    dependencies:
+        - submodule
     tags: [docker]
     image: golang:1.9
     script:
@@ -32,6 +51,8 @@ lint:
 integration:
     <<: *dir_setup
     stage: test
+    dependencies:
+        - submodule
     tags: [shell]
     coverage: '/total:\s+\(statements\)\s+(\d+.\d+\%)/'
     artifacts:
