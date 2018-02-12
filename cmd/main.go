@@ -21,11 +21,15 @@ func main() {
 
 	// these would tend to leave points behind on the shutdown
 	writePoints(10, 32, 32, 0, "pulse")
+	time.Sleep(5 * time.Second) // this sleep period puts space in the graph
 	writePoints(10, 16, 32, 0, "pulse")
+	time.Sleep(5 * time.Second)
 	writePoints(100, 16, 32, 0, "pulse")
+	time.Sleep(5 * time.Second)
 
 	// timer should kick in for this one
 	writePoints(20, 32, 32, 1000, "pulse")
+	time.Sleep(5 * time.Second)
 
 	//
 	// Flooding points will test throughput
@@ -33,21 +37,33 @@ func main() {
 
 	// scaling up pointBatchSize (moderate improvement)
 	writePoints(1000000, 16, 1024, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 16, 4096, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 16, 16384, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 16, 65536, 0, "flood")
+	time.Sleep(5 * time.Second)
 
 	// scaling up chanBuffer (flat improvement)
 	writePoints(1000000, 1024, 1024, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 4096, 1024, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 16384, 1024, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 65536, 1024, 0, "flood")
+	time.Sleep(5 * time.Second)
 
 	// scaling up both in parallel (best improvement)
 	writePoints(1000000, 1024, 1024, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 4096, 4096, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 16384, 16384, 0, "flood")
+	time.Sleep(5 * time.Second)
 	writePoints(1000000, 65536, 65536, 0, "flood")
+	time.Sleep(5 * time.Second)
 }
 
 func writePoints(points int, chanBuffer int, pointBatchSize int, interval time.Duration, metric string) {
@@ -78,6 +94,4 @@ func writePoints(points int, chanBuffer int, pointBatchSize int, interval time.D
 	}
 
 	gi.Stahp()
-
-	time.Sleep(5 * time.Second) // this sleep period puts space in the graph
 }
