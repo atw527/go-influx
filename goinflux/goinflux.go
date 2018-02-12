@@ -94,7 +94,7 @@ func (gi *goInflux) PingWait() error {
 			sleepTime = 60
 		}
 
-		log.Printf("Influx ping failed; sleeping %v seconds before trying again.", sleepTime)
+		log.Printf("Influx ping failed; sleeping %d seconds before trying again.", sleepTime)
 		time.Sleep(sleepTime * time.Second)
 
 		gi.influx.Close()
@@ -106,7 +106,7 @@ func (gi *goInflux) PingWait() error {
 		_, _, err = gi.influx.Ping(1 * time.Second)
 	}
 
-	log.Println("Ping success")
+	log.Println("Ping success; Influx is back")
 
 	return nil
 }
