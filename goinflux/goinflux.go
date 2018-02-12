@@ -3,6 +3,7 @@ package goinflux
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -16,7 +17,11 @@ type TagGroup map[string]string
 type FieldGroup map[string]interface{}
 
 type goInflux struct {
-	init           bool
+	init bool
+
+	host           string
+	port           string
+	chanBuffer     int
 	pointBatchSize int
 	heartBeat      time.Duration
 
@@ -42,24 +47,26 @@ func NewGoInflux(host string, port string, chanBuffer int, pointBatchSize int, h
 
 	gi.init = true
 
+	gi.host = host
+	gi.port = port
+	gi.chanBuffer = chanBuffer
+	gi.pointBatchSize = pointBatchSize - 1 // so I can use > instead of >=
+	gi.heartBeat = heartBeat
+
+	gi.points = make(chan *client.Point, chanBuffer)
+	gi.sthapped = make(chan int)
+
 	gi.bpConfig = client.BatchPointsConfig{
 		Database:  os.Getenv("INFLUX_DB"),
 		Precision: "us",
 	}
-
-	gi.heartBeat = heartBeat
-	gi.pointBatchSize = pointBatchSize - 1 // so I can use > instead of >=
-	gi.points = make(chan *client.Point, chanBuffer)
-	gi.sthapped = make(chan int)
 
 	gi.bp, err = client.NewBatchPoints(gi.bpConfig)
 	if err != nil {
 		return &gi, err
 	}
 
-	gi.influx, err = client.NewHTTPClient(client.HTTPConfig{
-		Addr: "http://" + os.Getenv("INFLUX_HOST") + ":" + os.Getenv("INFLUX_PORT"),
-	})
+	err = gi.connect()
 	if err != nil {
 		return &gi, err
 	}
@@ -70,8 +77,45 @@ func NewGoInflux(host string, port string, chanBuffer int, pointBatchSize int, h
 }
 
 // NewGoInfluxDefaults constructor that uses env vars instead of parameters
-func NewGoInfluxDefaults(chanBuffer int, pointBatchSize int, heartBeat time.Duration) (GoInflux, error) {
+func (gi *goInflux) NewGoInfluxDefaults(chanBuffer int, pointBatchSize int, heartBeat time.Duration) (GoInflux, error) {
 	return NewGoInflux(os.Getenv("INFLUX_HOST"), os.Getenv("INFLUX_PORT"), 1024, 1024, 1)
+}
+
+func (gi *goInflux) PingWait() error {
+	var sleepTime time.Duration
+	for _, _, err := gi.influx.Ping(1 * time.Second); err != nil; {
+		log.Println(err.Error())
+
+		sleepTime = 5
+		//sleepTime += 5
+		if sleepTime > 60 {
+			sleepTime = 60
+		}
+
+		log.Printf("Influx ping failed; sleeping %v seconds before trying again.", sleepTime)
+		time.Sleep(sleepTime * time.Second)
+
+		gi.influx.Close()
+		err := gi.connect()
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
+
+	return nil
+}
+
+func (gi *goInflux) connect() error {
+	var err error
+
+	gi.influx, err = client.NewHTTPClient(client.HTTPConfig{
+		Addr: "http://" + os.Getenv("INFLUX_HOST") + ":" + os.Getenv("INFLUX_PORT"),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AddPointDrop add point to the batch; dropping it and returning err if the channel is full
@@ -172,19 +216,17 @@ func (gi *goInflux) managePoints() {
 }
 
 func (gi *goInflux) writePoints() error {
-	var err error
-
 	if len(gi.bp.Points()) > 0 {
 		//fmt.Printf("%v... ", len(gi.bp.Points()))
 
-		_, _, err = gi.influx.Ping(1 * time.Second)
+		err := gi.influx.Write(gi.bp)
 		if err != nil {
-			return err
-		}
-
-		err = gi.influx.Write(gi.bp)
-		if err != nil {
-			return err
+			log.Println(err.Error())
+			err = gi.PingWait()
+			if err != nil {
+				return err
+			}
+			return gi.writePoints()
 		}
 
 		gi.bp, err = client.NewBatchPoints(gi.bpConfig)

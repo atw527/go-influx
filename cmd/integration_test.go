@@ -13,4 +13,6 @@ func TestWritePoints(t *testing.T) {
 	os.Setenv("INFLUX_DB", "testing")
 
 	writePoints(10, 32, 32, 0, "pulse")
+
+	writePoints(10, 32, 32, 5, "pulse")
 }
