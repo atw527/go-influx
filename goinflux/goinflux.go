@@ -83,11 +83,13 @@ func (gi *goInflux) NewGoInfluxDefaults(chanBuffer int, pointBatchSize int, hear
 
 func (gi *goInflux) PingWait() error {
 	var sleepTime time.Duration
-	for _, _, err := gi.influx.Ping(1 * time.Second); err != nil; {
+	_, _, err := gi.influx.Ping(1 * time.Second)
+
+	for err != nil {
 		log.Println(err.Error())
 
-		sleepTime = 5
-		//sleepTime += 5
+		//sleepTime = 5
+		sleepTime += 5
 		if sleepTime > 60 {
 			sleepTime = 60
 		}
@@ -96,11 +98,15 @@ func (gi *goInflux) PingWait() error {
 		time.Sleep(sleepTime * time.Second)
 
 		gi.influx.Close()
-		err := gi.connect()
+		err = gi.connect()
 		if err != nil {
 			log.Println(err.Error())
 		}
+
+		_, _, err = gi.influx.Ping(1 * time.Second)
 	}
+
+	log.Println("Ping success")
 
 	return nil
 }
@@ -118,7 +124,7 @@ func (gi *goInflux) connect() error {
 	return nil
 }
 
-// AddPointDrop add point to the batch; dropping it and returning err if the channel is full
+// AddPointError add point to the batch; dropping it and returning err if the channel is full
 func (gi *goInflux) AddPointError(measurement string, tags TagGroup, fields FieldGroup, ts int64) error {
 	if !gi.init {
 		return errors.New("Influx connections not initialized")

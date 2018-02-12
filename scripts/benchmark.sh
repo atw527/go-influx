@@ -1,5 +1,10 @@
 #!/bin/bash
 
+cd "${0%/*}"
+cd ..
+
+./scripts/chaos.sh &
+
 echo "Running unit tests..."
 go test ./...
 echo
