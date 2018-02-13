@@ -77,7 +77,7 @@ func NewGoInflux(host string, port string, chanBuffer int, pointBatchSize int, h
 }
 
 // NewGoInfluxDefaults constructor that uses env vars instead of parameters
-func (gi *goInflux) NewGoInfluxDefaults(chanBuffer int, pointBatchSize int, heartBeat time.Duration) (GoInflux, error) {
+func NewGoInfluxDefaults(chanBuffer int, pointBatchSize int, heartBeat time.Duration) (GoInflux, error) {
 	return NewGoInflux(os.Getenv("INFLUX_HOST"), os.Getenv("INFLUX_PORT"), 1024, 1024, 1)
 }
 
